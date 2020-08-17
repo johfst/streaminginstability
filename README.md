@@ -2,6 +2,8 @@
 Research code for upcoming paper on lunar formation via the streaming instability. 
 All code is meant to work on the output of Athena, which can be found at 
 https://princetonuniversity.github.io/Athena-Cversion/.  
+This is, of course, not the *entirety* of the code used for the project, but it's what
+I'm using the majority of the time for now.
 Nothing here is guaranteed to work 100%: keep your bug swatter handy.
 
 ## Included files
