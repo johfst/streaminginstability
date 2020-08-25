@@ -25,5 +25,17 @@ if args.timestep % args.dt != 0:
 
 t_index = int(args.timestep / args.dt)
 
+print("Importing tab file...")
 tab_df = pu.get_tab_df_multicore(args.simfolder, args.x1_blocks, args.x2_blocks, t_index)
 print(f"Got tab dataframe for tabfile index {t_index}")
+
+x_resolution = max(tab_df["i-zone"]) - min(tab_df["i-zone"]) + 1
+y_resolution = max(tab_df["j-zone"]) - min(tab_df["j-zone"]) + 1
+if x_resolution * y_resolution != len(tab_df["dpar"]):
+    print(f"Error: computed resolutions {x_resolution} x {y_resolution} don't match \
+            length of particle density data ({len(tab_df['dpar'])}).")
+    exit(1)
+
+dpar_matrix = np.array(tab_df["x1"]).reshape(y_resolution, x_resolution)[::-1]
+print("Got particle density matrix.")
+
