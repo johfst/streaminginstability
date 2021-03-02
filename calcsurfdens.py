@@ -45,31 +45,33 @@ if tmin > tmax:
 index_dt = args.dt
 posfile = args.posfile
 
-surf_dens_arr = []
 pos_vals = None
 # these are the true timesteps, for each step that has tab data
-t_vals = np.array(list(range(tmin, index_dt*(tmax - tmin)+1, index_dt)))
+t_vals = np.array(list(range(tmin, index_dt*(tmax - tmin)+tmin + 1, index_dt)))
+print(t_vals)
 
-print("Importing timesteps...")
-for t_index in range(tmin, tmax+1):
+for i, t_index in enumerate(range(tmin, tmax+1)):
     print(f"Importing t_index = {t_index}")
     tab_df = pu.get_tab_df_multicore(simfolder, x1_blocks, x2_blocks, t_index)
-    surface_density_t = pu.compute_surface_dens(tab_df)
-    
+
     if t_index == tmin:
-        pos_vals = np.array(surface_density_t["x1"])
+        pos_vals = np.array(tab_df["x1"])
 
-    surf_dens_arr.append(np.array(surface_density_t["dpar"]))
+        if posfile is not None:
+            np.savetxt(posfile, pos_vals, delimiter=",")
+            print(f"Saved position values in {posfile}.")
 
-surf_dens_arr = np.array(surf_dens_arr)
+    print(f"Calculating surface density for time index {t_index}")
+    surface_density_t = pu.compute_surface_dens(tab_df)
+    print(surface_density_t)
+    print(np.array(surface_density_t["dpar"]))
+    print(np.array(surface_density_t["dpar"]).shape)
+    # prepend row with timestep
+    row = np.insert(np.array(surface_density_t["dpar"]), 0, t_vals[i])
 
-# prepend surface density data with the tab file index
-surf_dens_arr = np.hstack((t_vals[np.newaxis].T, surf_dens_arr))
+    with open(savepath, "ab") as surfdensfile:
+        np.savetxt(surfdensfile, row, delimiter=",")
+    print(f"Saved surface density for time index {t_index} successfully.")
 
-np.savetxt(savepath, surf_dens_arr, delimiter=",")
-print(f"Saved surface density in {savepath}.")
-if posfile is not None:
-    np.savetxt(posfile, pos_vals, delimiter=",")
-    print(f"Saved position values in {posfile}.")
 end_time = time()
 print(f"Done ({end_time - start_time:.1f} seconds)")
