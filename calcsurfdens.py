@@ -48,7 +48,6 @@ posfile = args.posfile
 pos_vals = None
 # these are the true timesteps, for each step that has tab data
 t_vals = np.array(list(range(tmin, index_dt*(tmax - tmin)+tmin + 1, index_dt)))
-print(t_vals)
 
 for i, t_index in enumerate(range(tmin, tmax+1)):
     print(f"Importing t_index = {t_index}")
@@ -63,12 +62,10 @@ for i, t_index in enumerate(range(tmin, tmax+1)):
 
     print(f"Calculating surface density for time index {t_index}")
     surface_density_t = pu.compute_surface_dens(tab_df)
-    print(surface_density_t)
-    print(np.array(surface_density_t["dpar"]))
-    print(np.array(surface_density_t["dpar"]).shape)
     # prepend row with timestep
     row = np.insert(np.array(surface_density_t["dpar"]), 0, t_vals[i])
 
+    print("Saving...")
     with open(savepath, "ab") as surfdensfile:
         np.savetxt(surfdensfile, row, delimiter=",")
     print(f"Saved surface density for time index {t_index} successfully.")
