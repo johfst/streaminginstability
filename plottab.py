@@ -37,5 +37,5 @@ if x_resolution * y_resolution != len(tab_df["dpar"]):
     exit(1)
 
 dpar_matrix = np.array(tab_df["x1"]).reshape(y_resolution, x_resolution)[::-1]
-print("Got particle density matrix.")
+print("Got particle density matrix.")))
 
