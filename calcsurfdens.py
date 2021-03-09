@@ -61,9 +61,10 @@ for i, t_index in enumerate(range(tmin, tmax+1)):
             print(f"Saved position values in {posfile}.")
 
     print(f"Calculating surface density for time index {t_index}")
-    surface_density_t = pu.compute_surface_dens(tab_df)
+    surface_density_t = np.array(pu.compute_surface_dens(tab_df)["dpar"])
+    length = len(surface_density_t)
     # prepend row with timestep
-    row = np.insert(np.array(surface_density_t["dpar"]), 0, t_vals[i])
+    row = np.insert(surface_density_t, 0, t_vals[i]).reshape(1, length+1)
 
     print("Saving...")
     with open(savepath, "ab") as surfdensfile:
