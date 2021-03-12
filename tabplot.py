@@ -29,7 +29,6 @@ tab_df = pu.get_tab_df_multicore(
         args.x2_blocks, 
         timestep=args.tabindex,
         ).sort_values(by=["j-zone", "i-zone"])
-print(tab_df.head())
 
 x_vals = np.array(tab_df["x1"])
 z_vals = np.array(tab_df["x2"])
