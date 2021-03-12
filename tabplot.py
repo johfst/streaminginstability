@@ -5,23 +5,24 @@ import matplotlib.ticker as tck
 import pandas as pd
 import argparse
 import plotutils as pu
-import sys
 
 parser = argparse.ArgumentParser(
-        description="Plot density from tab file."
+        description="Plot particle density from tab file."
         )
 
 parser.add_argument("datapath", help="Path to directory containing id directories")
-parser.add_argument("tabindex", type=int)
+parser.add_argument("tabindex", help="Tabfile index", type=int)
 parser.add_argument("savepath", help="Name of output image file")
-parser.add_argument("x1_blocks", type=int)
-parser.add_argument("x2_blocks", type=int)
-parser.add_argument("title")
-parser.add_argument("vmin", type=float)
-parser.add_argument("vmax", type=float)
+parser.add_argument("x1_blocks", help="Number of blocks in the x1 direction", type=int)
+parser.add_argument("x2_blocks", help="Number of blocks in the x2 direction", type=int)
+parser.add_argument("title", help="Title of plot")
+parser.add_argument("vmin", help="Colorbar minumum", type=float)
+parser.add_argument("vmax", help="Colorbar maximum", type=float)
 
 args = parser.parse_args()
 
+# load tabfile dataframe
+# sort by rows, then columns
 tab_df = pu.get_tab_df_multicore(
         args.datapath, 
         args.x1_blocks, 
@@ -33,11 +34,6 @@ print(tab_df.head())
 x_vals = np.array(tab_df["x1"])
 z_vals = np.array(tab_df["x2"])
 dpar_array = np.array(tab_df["dpar"])
-"""
-plt.plot(x_vals)
-plt.savefig(args.savepath)
-sys.exit(0)
-"""
 
 i_vals = tab_df["i-zone"]
 j_vals = tab_df["j-zone"]
@@ -45,7 +41,6 @@ i_length = max(i_vals) - min(i_vals) + 1
 j_length = max(j_vals) - min(j_vals) + 1
 
 dpar_matrix = np.flip(np.reshape(dpar_array, (j_length, i_length)), axis=0)
-#dpar_matrix = np.reshape(np.logspace(-2, 1.7, 512**2), (512, 512))
 
 ### plotting ###
 plt.rcParams.update({"text.usetex" : True})
