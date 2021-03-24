@@ -1,17 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
 import matplotlib.colors as col
 import matplotlib.ticker as tck
 from matplotlib import rc
-import sys
 import plotutils as pu
-import os
 import argparse
 
 ### space-time plots, as in Carrera fig. 4 ###
 
-def make_spacetimefig(surfdenscsv, savepath, posvalsfile, title, vmin, vmax):
+def make_spacetimefig(surfdenscsv, posvalsfile, title, vmin, vmax):
     print("Making spacetime plot...")
 
     surf_dens_arr = np.loadtxt(surfdenscsv, delimiter=",")
@@ -107,7 +104,7 @@ if __name__ == "__main__":
     posvalsfile = args.posvalsfile
     title = args.title
 
-    fig = make_spacetimefig(surfdenscsv, savepath, posvalsfile, title, args.vmin, args.vmax)
+    fig = make_spacetimefig(surfdenscsv, posvalsfile, title, args.vmin, args.vmax)
 
     print("Saving figure...")
     fig.savefig(savepath)
