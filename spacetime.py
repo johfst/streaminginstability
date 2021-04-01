@@ -7,8 +7,7 @@ import plotutils as pu
 import argparse
 
 ### space-time plots, as in Carrera fig. 4 ###
-
-def make_spacetimefig(surfdenscsv, posvalsfile, title, vmin, vmax):
+def make_surf_dens_arr(surfdenscsv, posvalsfile):
     print("Making spacetime plot...")
 
     surf_dens_arr = np.loadtxt(surfdenscsv, delimiter=",")
@@ -19,14 +18,29 @@ def make_spacetimefig(surfdenscsv, posvalsfile, title, vmin, vmax):
 
     print("Calculating mean & scaling...")
     mean_arr = np.array([np.average(row) for row in surf_dens_arr])
-    surf_dens_arr_scaled = np.flip(np.array([surf_dens_arr[i] / mean_arr[i] for i in range(len(mean_arr))]), 0)
+    surf_dens_arr_scaled = np.flip(
+            np.array([surf_dens_arr[i] / mean_arr[i] for i in range(len(mean_arr))]), 0
+            )
 
+    return surf_dens_arr_scaled, pos_vals, orbits_vals
+
+
+def make_spacetimeax(
+        ax,
+        surf_dens_arr,
+        pos_min,
+        pos_max,
+        orbits_min,
+        orbits_max,
+        title,
+        vmin,
+        vmax
+        ):
     ### space-time plots, continued ###
     plt.rcParams.update({"text.usetex" : True})
 
     base = 2
     print("Creating plot...")
-    fig, ax = plt.subplots(figsize=(4,8))
     ax.set_xlabel("$x$")
     ax.set_ylabel("revolutions")
     ax.set_title(title)
@@ -37,18 +51,18 @@ def make_spacetimefig(surfdenscsv, posvalsfile, title, vmin, vmax):
 
     print("Plotting...")
     plot = ax.imshow(
-            surf_dens_arr_scaled,
+            surf_dens_arr,
             extent=(
-                pos_vals.min(),
-                pos_vals.max(),
-                orbits_vals.min(),
-                orbits_vals.max()
+                pos_min,
+                pos_max,
+                orbits_min,
+                orbits_max
                 ),
             aspect='auto',
             interpolation="none",
             norm=col.LogNorm(
-            #    vmin=surf_dens_arr_scaled.min(),
-            #    vmax=surf_dens_arr_scaled.max()
+            #    vmin=surf_dens_arr.min(),
+            #    vmax=surf_dens_arr.max()
                  vmin=vmin,
                  vmax=vmax,
                 ),
@@ -80,8 +94,7 @@ def make_spacetimefig(surfdenscsv, posvalsfile, title, vmin, vmax):
     #cbar.set_ticklabels(list(map("{:.2f}".format, ticks)))
     plt.tight_layout()
 
-    print("Spacetime figure done.")
-    return fig
+    print("Spacetime axis finished.")
 
 if __name__ == "__main__":
 
@@ -104,7 +117,21 @@ if __name__ == "__main__":
     posvalsfile = args.posvalsfile
     title = args.title
 
-    fig = make_spacetimefig(surfdenscsv, posvalsfile, title, args.vmin, args.vmax)
+    surf_dens_arr, pos_vals, orbit_vals = make_surf_dens_arr(surfdenscsv, posvalsfile)
+
+    fig, ax = plt.subplots(figsize=(4,8))
+
+    make_spacetimeax(
+            ax,
+            surf_dens_arr,
+            pos_vals.min(),
+            pos_vals.max(),
+            orbit_vals.min(),
+            orbit_vals.max(),
+            title,
+            args.vmin,
+            args.vmax
+            )
 
     print("Saving figure...")
     fig.savefig(savepath)
