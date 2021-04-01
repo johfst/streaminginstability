@@ -70,6 +70,14 @@ def make_spacetimeax(
             #vmax=2**5
             )
 
+
+    print("Spacetime axis finished.")
+    return plot
+
+def make_colorbar(fig, axs, plot, base=2):
+    locator = tck.LogLocator(base=base)
+    formatter = tck.LogFormatter(base=base)
+    
     cbar = fig.colorbar(plot, ax=ax, ticks=locator, format=formatter)
     cbar.set_label(
         r"$\frac{\Sigma_p}{\left< \Sigma_p \right>}$",
@@ -78,6 +86,7 @@ def make_spacetimeax(
         labelpad=15,
         )
 
+    """
     vmin_order_of_magnitude = np.ceil(np.log10(vmin))
     vmax_order_of_magnitude = np.floor(np.log10(vmax))
     ticks = np.append(
@@ -92,9 +101,7 @@ def make_spacetimeax(
                 ])
     #cbar.set_ticks(ticks)
     #cbar.set_ticklabels(list(map("{:.2f}".format, ticks)))
-    plt.tight_layout()
-
-    print("Spacetime axis finished.")
+    """
 
 if __name__ == "__main__":
 
@@ -121,7 +128,7 @@ if __name__ == "__main__":
 
     fig, ax = plt.subplots(figsize=(4,8))
 
-    make_spacetimeax(
+    plot = make_spacetimeax(
             ax,
             surf_dens_arr,
             pos_vals.min(),
@@ -132,6 +139,8 @@ if __name__ == "__main__":
             args.vmin,
             args.vmax
             )
+    make_colorbar(fig, ax, plot)
+    plt.tight_layout()
 
     print("Saving figure...")
     fig.savefig(savepath)
