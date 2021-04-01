@@ -74,7 +74,7 @@ def make_spacetimeax(
     print("Spacetime axis finished.")
     return plot
 
-def make_colorbar(fig, axs, plot, base=2):
+def make_colorbar(fig, ax, plot, base=2):
     locator = tck.LogLocator(base=base)
     formatter = tck.LogFormatter(base=base)
     
