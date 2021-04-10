@@ -29,7 +29,7 @@ def get_sorted_id_dirs(foldername):
             key=lambda directory: int(directory[2:]),
             )
 
-def get_last_tab_file(id_foldername, id_directory_num=0):
+def get_last_tab_file(id_foldername, id_directory_num=0, dim3=False):
     """
     Take a path to a(n) (id) directory, return the name of the tab file at the last
     time index
@@ -43,7 +43,14 @@ def get_last_tab_file(id_foldername, id_directory_num=0):
     id_filename_modifier = ""
     if id_directory_num > 0:
         id_filename_modifier = f"-id{id_directory_num}"
-    return f"Par_Strat2d{id_filename_modifier}.{last_tab_time:04}.tab"
+
+    dimstr = None
+    if dim3:
+        dimstr = "3d"
+    else:
+        dimstr = "2d"
+
+    return f"Par_Strat{dimstr}{id_filename_modifier}.{last_tab_time:04}.tab"
 
 def get_tab_file(idfolder, timestep_id):
     """
@@ -55,9 +62,14 @@ def get_tab_file(idfolder, timestep_id):
     tabfilelist = [f for f in filelist if "tab" in f]
     return [f for f in tabfilelist if f"{timestep_id:04}" in f][0]
 
+def get_iddir_2d_chunk(id_dirs, id_offset, chunk2dsize):
+    return [id_dir for id_dir in id_dirs 
+            if id_offset <= get_idnum_from_foldername(id_dir) < id_offset+chunk2dsize]
 
+def get_idnum_from_foldername(id_foldername):
+    return int(id_foldername[2:])
 
-def get_tab_df_multicore(foldername, x1_blocks, x2_blocks, timestep=None):
+def get_tab_df_multicore(foldername, x1_blocks, x2_blocks, timestep=None, x3_block_offset=None):
     """
     Take a path to a multicore run folder and return a dataframe containing
     all of the tabfile data
@@ -68,17 +80,23 @@ def get_tab_df_multicore(foldername, x1_blocks, x2_blocks, timestep=None):
 
     # This is a sorted list of the id directories in the parent folder
     id_directories = get_sorted_id_dirs(foldername)
+    if x3_block_offset is not None:
+        chunk2dsize = x1_blocks * x2_blocks
+        id_offset = x3_block_offset * chunk2dsize
+        id_directories = get_iddir_2d_chunk(id_directories, id_offset, chunk2dsize)
 
     i_offset = 0
     j_offset = 0
     previous_x2_block_index = 0
     master_df = None
-    for id_directory_num, id_directory in enumerate(id_directories):
+    for id_directory in id_directories:
+        id_directory_num = get_idnum_from_foldername(id_directory)
         tab_filename = None
         if timestep is None:
             tab_filename = get_last_tab_file(
                     os.path.join(foldername, id_directory),
                     id_directory_num,
+                    dim3=(x3_block_offset is not None),
                     )
         else:
             tab_filename = get_tab_file(os.path.join(foldername, id_directory), timestep)
@@ -91,7 +109,7 @@ def get_tab_df_multicore(foldername, x1_blocks, x2_blocks, timestep=None):
         them relative to the entire domain.
         """
         x1_block_index = id_directory_num % x1_blocks
-        x2_block_index = np.floor(float(id_directory_num) / x1_blocks)
+        x2_block_index = np.floor(float(id_directory_num % chunk2dsize) / x1_blocks)
 
         # compute j_offset for this block
         if x2_block_index > previous_x2_block_index:
@@ -99,6 +117,10 @@ def get_tab_df_multicore(foldername, x1_blocks, x2_blocks, timestep=None):
         # add accumulated offset
         df["i-zone"] += i_offset
         df["j-zone"] += j_offset
+
+        # compute k_offset for this block (if needed)
+        if x3_block_offset is not None:
+            df["k-zone"] += ( max(df["k-zone"]) - min(df["k-zone"]) + 1 ) * x3_block_offset
 
         """
         Compute the row (x2_block_index) and column (x1_block_index) of the current file's
@@ -121,6 +143,22 @@ def get_tab_df_multicore(foldername, x1_blocks, x2_blocks, timestep=None):
 
     return master_df
 
+def get_tab_df_multicore_3d(foldername, x1_blocks, x2_blocks, x3_blocks, timestep=None):
+    master_df = None
+    for x3_index in range(x3_blocks):
+        # get 2d slice (think of a plane in the x1 and x2 directions)
+        slice_2d_df = get_tab_df_multicore(
+                foldername, x1_blocks, x2_blocks, timestep=timestep, x3_block_offset=x3_index
+                )
+        
+        if master_df is None:
+            master_df = slice_2d_df
+        else:
+            master_df = master_df.append(slice_2d_df)
+
+    return master_df
+    
+
 def compute_surface_dens(df):
     """
     Takes a dataframe containing the density at each point, returns
@@ -137,7 +175,9 @@ def compute_surface_dens(df):
         row = [i, i_rows.iloc[0]["x1"]]
         
 
-        dzarr = np.array([i_rows.iloc[j]["x2"] - i_rows.iloc[j-1]["x2"] for j in range(1,len(i_rows))])
+        dzarr = np.array([
+            i_rows.iloc[j]["x2"] - i_rows.iloc[j-1]["x2"] for j in range(1,len(i_rows))
+            ])
         par_surf_dens = sum(np.array(i_rows["dpar"])[1:] * dzarr)
         #print(surf_dens)
         row.append(par_surf_dens)
@@ -171,10 +211,30 @@ def load_surfdenscsv(filename):
     
 def get_df(filename):
     # i == x1 == r, j == x2 == z
-    head = ["i-zone", "j-zone", "x1", "x2", "d", "M1", "M2", "M3", "dpar", "M1par", "M2par", "M3par"]
-    df = pd.read_csv(filename, sep="\s+", names=head, header=5, usecols=range(0,12))
+    header_line = get_tab_header_line(filename)
+    sep = "(?<!#)\s+"
+    df = pd.read_csv(filename, sep=sep, header=header_line, engine="python")
+    
+    # column names in the file suck, so renaming them
+    newcols = {}
+    for col in list(df):
+        newname = col[col.find("=")+1:]
+        newcols[col] = newname
+    df = df.rename(columns=newcols)
     df = df.apply(pd.to_numeric, errors="coerce")
     return df
+
+def get_tab_header_line(filename):
+    header_line = 0
+    with open(filename, "r") as f:
+        line = f.readline()
+        while line != "":
+            if line.find("[1]") != -1:
+                break
+            else:
+                header_line += 1
+                line = f.readline()
+    return header_line
 
 def notify(msg):
     notifystr = "notify-send -i /home/jeremy/Pictures/icons/python-icon-32.png Python '{0}'".format(msg)
