@@ -194,6 +194,66 @@ def compute_surface_dens(df):
     
     return densdf
 
+def integrate_df_3d(df, direction):
+    """
+    Integrate a 3d dataframe over an arbitrary direction
+    honestly, this would probably be better if it turned the
+    input df into a numpy cube, because i bet you could vectorize
+    it and it would be faster, but whatever
+
+    df : dataframe containing positions, dpar, etc.
+    direction : one of "x1", "x2", "x3"
+    """
+    def direction_to_index(direction):
+        return int(direction[1:]) - 1
+    def direction_to_index_label(direction):
+        return chr( direction_to_index(direction) + 105 )
+    def get_direction_index_compl(dir_indx):
+        return sorted([ (dir_index + n) % 3 for n in (1,2) ])
+    def index_to_direction(dir_indx):
+        return "x" + str(dir_indx + 1)
+
+    dir_index = direction_to_index(direction)
+
+    # directions orthogonal to integrating direction
+    dir1_index, dir2_index = get_direction_index_compl(dir_index)
+    dir1 = index_to_direction(dir1_index)
+    dir2 = index_to_direction(dir2_index)
+    dir1_index_label = direction_to_index_label(dir1) + "-zone"
+    dir2_index_label = direction_to_index_label(dir2) + "-zone"
+
+    dir1_min = min(df[dir1_index_label])
+    dir1_max = max(df[dir1_index_label])
+    dir2_min = min(df[dir2_index_label])
+    dir2_max = max(df[dir2_index_label])
+
+    new_rows = []
+    for n in range(dir1_min, dir1_max+1):
+        for m in range(dir2_min, dir2_max+1):
+            locator = (df[dir1_index_label] == n) & (df[dir2_index_label] == m)
+            nm_location_df = df.loc[locator]
+            row = [n, m, nm_location_df.iloc[0][dir2], nm_location_df.iloc[0][dir1]]
+
+            d_dir = np.abs(nm_location_df.iloc[1][direction] - nm_location_df.iloc[0][direction])
+            compute_avgs = lambda arr : np.array([
+                    0.5*(arr[l] + arr[l+1]) for l in range(0, len(arr)-1)
+                    ])
+            def compute_integral(col):
+                vals = np.array(nm_location_df[col])
+                avgs = compute_avgs(vals)
+                return sum(avgs * d_dir)
+
+            dpar_integral = compute_integral("dpar")
+            d_integral = compute_integral("d")
+            row.append(dpar_integral)
+            row.append(d_integral)
+
+            new_rows.append(row)
+
+    columns = [dir1_index_label, dir2_index_label, dir1, dir2, "dpar", "d"]
+    integrated_df = pd.DataFrame(new_rows, columns=columns)
+    return integrated_df
+
 def get_last_tab_time(folder):
     lsproc = subprocess.Popen(["ls", folder], stdout=subprocess.PIPE)
     grepproc = subprocess.Popen(["grep", "tab"], stdin=lsproc.stdout, stdout=subprocess.PIPE)
