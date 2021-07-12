@@ -53,7 +53,7 @@ else:
     tab_df = pu.integrate_df_3d(tab_df_3d, "x3")
 
 x_vals = np.array(tab_df["x1"])
-z_vals = np.array(tab_df["x2"])
+y_vals = np.array(tab_df["x2"])
 dpar_array = np.array(tab_df["dpar"])
 
 indx_length = lambda arr : max(arr) - min(arr) + 1
@@ -74,8 +74,8 @@ plt.rcParams.update({"text.usetex" : True})
 base = 2
 print("Creating plot...")
 fig, ax = plt.subplots(figsize=(10, 10))
-ax.set_xlabel("$x$")
-ax.set_ylabel("$z$")
+ax.set_xlabel("$x \;(H)$", fontsize=20)
+ax.set_ylabel("$y \;(H)$", fontsize=20)
 ax.set_title(args.title)
 
 print("Setting locator & formatter...")
@@ -88,8 +88,8 @@ plot = ax.imshow(
             extent=(
                 x_vals.min(),
                 x_vals.max(),
-                z_vals.min(),
-                z_vals.max(),
+                y_vals.min(),
+                y_vals.max(),
                 ),
             aspect="auto",
             interpolation="none",
@@ -99,15 +99,17 @@ plot = ax.imshow(
                 ),
             )
 
+ax.set_aspect(1)
+ax.tick_params(axis="both", which="major", length=8, labelsize=16)
+
 if args.peakfile is not None:
     peak_df = pd.read_csv(args.peakfile, sep="\s\s+")
     for _, row in peak_df.iterrows():
-        x = row["center_of_mass[x]"]
-        z = row["center_of_mass[z]"]
         radius = row["Hill_radius"]
-        ax.set_aspect(1)
+        x = row["center_of_mass[y]"]
+        y = row["center_of_mass[x]"]
         ax.add_artist( plt.Circle(
-            (x, z),
+            (x, y),
             radius,
             fill=False,
             color="white",
@@ -120,7 +122,7 @@ cbar = fig.colorbar(plot, cax=cax, ticks=locator, format=formatter)
 cbar.set_label(
         r"$\frac{\Sigma_p}{\left< \Sigma_p \right>}$",
         rotation="horizontal",
-        fontsize=16,
+        fontsize=20,
         labelpad=15,
         )
 
