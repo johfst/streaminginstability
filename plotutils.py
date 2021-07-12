@@ -25,7 +25,9 @@ def get_sorted_id_dirs(foldername):
     return sorted(
             [directory for directory in os.listdir(foldername) if os.path.isdir(
                 os.path.join(foldername, directory)
-                )],
+                )
+                and directory[:2] == "id"
+                and directory[2:].isdigit()],
             key=lambda directory: int(directory[2:]),
             )
 
