@@ -234,7 +234,7 @@ def integrate_df_3d(df, direction):
         for m in range(dir2_min, dir2_max+1):
             locator = (df[dir1_index_label] == n) & (df[dir2_index_label] == m)
             nm_location_df = df.loc[locator]
-            row = [n, m, nm_location_df.iloc[0][dir2], nm_location_df.iloc[0][dir1]]
+            row = [n, m, nm_location_df.iloc[0][dir1], nm_location_df.iloc[0][dir2]]
 
             d_dir = np.abs(nm_location_df.iloc[1][direction] - nm_location_df.iloc[0][direction])
             compute_avgs = lambda arr : np.array([
