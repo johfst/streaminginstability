@@ -50,7 +50,7 @@ else:
             timestep=args.tabindex,
             ).sort_values(by=["k-zone", "j-zone", "i-zone"])
 
-    tab_df = pu.integrate_df_3d(tab_df_3d, "x3")
+    tab_df = pu.integrate_df_3d(tab_df_3d, "x3").sort_values(by=["j-zone", "i-zone"])
 
 x_vals = np.array(tab_df["x1"])
 y_vals = np.array(tab_df["x2"])
@@ -106,8 +106,8 @@ if args.peakfile is not None:
     peak_df = pd.read_csv(args.peakfile, sep="\s\s+")
     for _, row in peak_df.iterrows():
         radius = row["Hill_radius"]
-        x = row["center_of_mass[y]"]
-        y = row["center_of_mass[x]"]
+        x = row["center_of_mass[x]"]
+        y = row["center_of_mass[y]"]
         ax.add_artist( plt.Circle(
             (x, y),
             radius,
